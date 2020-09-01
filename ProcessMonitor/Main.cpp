@@ -12,6 +12,8 @@
 #include <ctime>
 #include <unordered_map>
 #include <thread>
+#include <CommCtrl.h>
+#include <sstream>
 
 std::wstring GetLastErrorAsStringW()
 {
@@ -57,8 +59,21 @@ void WinCall(std::intmax_t result)
 {
     if (!result)
     {
+        std::string error = GetLastErrorAsStringA();
+
+        throw std::exception(error.c_str());
+    };
+};
+
+
+HANDLE WinCall(HANDLE handleResult)
+{
+    if (handleResult == NULL)
+    {
         throw std::exception(GetLastErrorAsStringA().c_str());
     };
+
+    return handleResult;
 };
 
 
@@ -132,12 +147,87 @@ void DisplayProcesses(const std::vector<std::pair<DWORD, HWND>>& windowHandles)
         counter++;
     };
 
+    std::cout << "\n";
+};
+
+char AddShowGrowthToStream(std::intmax_t current, std::intmax_t previous)
+{
+    if (current == previous)
+    {
+        return '=';
+    }
+    else if (current < previous)
+    {
+        return 'v';
+    }
+    else if (current > previous)
+    {
+        return '^';
+    };
+
+}
+
+
+const std::pair<DWORD, HWND>& FindProcessByID(const std::vector<std::pair<DWORD, HWND>>& windowHandles)
+{
+    while (1)
+    {
+        std::cout << "Process ID: ";
+
+        DWORD processID = 0;
+        std::cin >> processID;
+
+        std::vector<std::pair<DWORD, HWND>>::const_iterator processData = std::find_if(windowHandles.cbegin(), windowHandles.cend(),
+                                                                                 [processID](const std::pair<DWORD, HWND>& element)
+                                                                                 {
+                                                                                     if (element.first == processID)
+                                                                                         return true;
+
+                                                                                     return false;
+                                                                                 });
+        if (processData != windowHandles.cend())
+            return *processData;
+        else
+        {
+            std::cout << "Invalid process ID: " << processID << "\n";
+        };
+    };
 };
 
 
+float GetPercentageChange(std::intmax_t current, std::intmax_t previous)
+{
+    std::intmax_t difference = current - previous;
+    
+    if (difference > 0)
+        int s = 0;
+
+    float percentage = std::abs(difference) / (static_cast<float>(current) / 100);
+
+    return percentage;
+};
+
+
+void ShowProcessMemoryData(const PROCESS_MEMORY_COUNTERS_EX& currentProcessMemory, const PROCESS_MEMORY_COUNTERS_EX& previousProcessMemory)
+{
+    std::cout << "\n\n" <<
+        "Page faults:                " << currentProcessMemory.PageFaultCount << " " << AddShowGrowthToStream(currentProcessMemory.PageFaultCount, previousProcessMemory.PageFaultCount) << " " << static_cast<std::intmax_t>(currentProcessMemory.PageFaultCount) - static_cast<std::intmax_t>(previousProcessMemory.PageFaultCount) << " " << GetPercentageChange(static_cast<std::intmax_t>(currentProcessMemory.PageFaultCount), static_cast<std::intmax_t>(previousProcessMemory.PageFaultCount)) << '%' << "\n" <<
+        "Working set size:           " << currentProcessMemory.WorkingSetSize << " " << AddShowGrowthToStream(currentProcessMemory.WorkingSetSize, previousProcessMemory.WorkingSetSize) << " " << static_cast<std::intmax_t>(currentProcessMemory.WorkingSetSize) - static_cast<std::intmax_t>(previousProcessMemory.WorkingSetSize) << " " << GetPercentageChange(static_cast<std::intmax_t>(currentProcessMemory.PageFaultCount), static_cast<std::intmax_t>(previousProcessMemory.PageFaultCount)) << '%' << "\n" <<
+        "Quota paged pool usage:     " << currentProcessMemory.QuotaPagedPoolUsage << " " << AddShowGrowthToStream(currentProcessMemory.QuotaPagedPoolUsage, previousProcessMemory.QuotaPagedPoolUsage) << " " << static_cast<std::intmax_t>(currentProcessMemory.QuotaPagedPoolUsage) - static_cast<std::intmax_t>(previousProcessMemory.QuotaPagedPoolUsage) << " " << GetPercentageChange(static_cast<std::intmax_t>(currentProcessMemory.PageFaultCount), static_cast<std::intmax_t>(previousProcessMemory.PageFaultCount)) << '%' << "\n" <<
+        "Quota non paged pool usage: " << currentProcessMemory.QuotaNonPagedPoolUsage << " " << AddShowGrowthToStream(currentProcessMemory.QuotaNonPagedPoolUsage, previousProcessMemory.QuotaNonPagedPoolUsage) << " " << static_cast<std::intmax_t>(currentProcessMemory.QuotaNonPagedPoolUsage) - static_cast<std::intmax_t>(previousProcessMemory.QuotaNonPagedPoolUsage) << " " << GetPercentageChange(static_cast<std::intmax_t>(currentProcessMemory.PageFaultCount), static_cast<std::intmax_t>(previousProcessMemory.PageFaultCount)) << '%' << "\n" <<
+        "Page file usage:            " << currentProcessMemory.PagefileUsage << " " << AddShowGrowthToStream(currentProcessMemory.PagefileUsage, previousProcessMemory.PagefileUsage) << " " << static_cast<std::intmax_t>(currentProcessMemory.PagefileUsage) - static_cast<std::intmax_t>(previousProcessMemory.PagefileUsage) << " " << GetPercentageChange(static_cast<std::intmax_t>(currentProcessMemory.PageFaultCount), static_cast<std::intmax_t>(previousProcessMemory.PageFaultCount)) << '%' << "\n" <<
+        "Private usage:              " << currentProcessMemory.PrivateUsage << " " << AddShowGrowthToStream(currentProcessMemory.PrivateUsage, previousProcessMemory.PrivateUsage) << " " << static_cast<std::intmax_t>(currentProcessMemory.PrivateUsage) - static_cast<std::intmax_t>(previousProcessMemory.PrivateUsage) << " " << GetPercentageChange(static_cast<std::intmax_t>(currentProcessMemory.PageFaultCount), static_cast<std::intmax_t>(previousProcessMemory.PageFaultCount));
+
+};
 
 int main()
 {
+
+    MEMORYSTATUSEX memoryStatus { sizeof(memoryStatus) };
+
+    GlobalMemoryStatusEx(&memoryStatus);
+
+
     std::vector<std::pair<DWORD, HWND>> windowHandles;
 
     EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&windowHandles));
@@ -145,48 +235,55 @@ int main()
     DisplayProcesses(windowHandles);
 
 
-    DWORD processID = 0;
-    std::cin >> processID;
-
-    const std::pair<DWORD, HWND>& processData =
-        *std::find_if(windowHandles.cbegin(), windowHandles.cend(),
-                      [processID](const std::pair<DWORD, HWND>& element)
-                      {
-                          if (element.first == processID)
-                              return true;
-
-                          return false;
-                      });
+    std::pair<DWORD, HWND> processData = FindProcessByID(windowHandles);
+    DWORD processID = processData.first;
 
 
     HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, false, processID);
 
+
+    PERFORMACE_INFORMATION performaceInfo { 0 };
+    performaceInfo.cb = sizeof(performaceInfo);
+
+    WINCALL(K32GetPerformanceInfo(&performaceInfo, sizeof(performaceInfo)));
+
+
+    PROCESS_MEMORY_COUNTERS_EX previousProcessMemory { 0 };
+
+
     while (1)
     {
+        const std::size_t processTitleLength = static_cast<std::size_t>(GetWindowTextLengthW(processData.second)) + 1;
+        wchar_t* processTitle = new wchar_t[processTitleLength];
+        memset(processTitle, 0, processTitleLength);
+
+        WINCALL(GetWindowTextW(processData.second, processTitle, processTitleLength));
+
         std::time_t timePoint = std::time(0);
         std::tm timePointNow { 0 };
 
         localtime_s(&timePointNow, &timePoint);
 
-        std::cout << timePointNow.tm_hour << ":" << timePointNow.tm_min << ":" << timePointNow.tm_sec << "\n";
-        std::cout << "Press \"Ctrl\" + \"C\" to exit anytime" << "\n";
+        std::wcout <<
+            "Press \"Ctrl\" + \"C\" to exit anytime" << "\n" <<
+            timePointNow.tm_hour << ":" << timePointNow.tm_min << ":" << timePointNow.tm_sec << "\n" <<
+            "PID: " << processID << "\n" <<
+            "Title: " << processTitle << "\n";
 
 
-        PROCESS_MEMORY_COUNTERS_EX  processMemory { 0 };
-        processMemory.cb = sizeof(processMemory);
+        PROCESS_MEMORY_COUNTERS_EX  currentProcessMemory { 0 };
+        currentProcessMemory.cb = sizeof(currentProcessMemory);
 
-        WINCALL(K32GetProcessMemoryInfo(processHandle, reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&processMemory), sizeof(processMemory)));
 
-        std::cout << 
-            "Page faults: " <<                        processMemory.PageFaultCount << "\n"  << 
-            "Peak working set size: " <<              processMemory.PeakWorkingSetSize << "\n" << 
-            "WorkingSetSize: " <<                     processMemory.WorkingSetSize << "\n" << 
-            "QuotaPeakPagedPoolUsage: " <<            processMemory.QuotaPeakPagedPoolUsage << "\n" <<
-            "QuotaPagedPoolUsage: " <<                processMemory.QuotaPagedPoolUsage << "\n" << 
-            "QuotaPeakNonPagedPoolUsage: " << processMemory.QuotaPeakNonPagedPoolUsage << "\n" << 
-            "QuotaNonPagedPoolUsage: " <<     processMemory.QuotaNonPagedPoolUsage << "\n"  <<
-            "PagefileUsage: " <<              processMemory.PagefileUsage << "\n" << 
-            "PeakPagefileUsage: " <<          processMemory.PeakPagefileUsage << "\n";
+        WINCALL(K32GetProcessMemoryInfo(processHandle, reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&currentProcessMemory), sizeof(currentProcessMemory)));
+
+        ShowProcessMemoryData(currentProcessMemory, previousProcessMemory);
+
+
+        delete[] processTitle;
+        processTitle = nullptr;
+
+        previousProcessMemory = currentProcessMemory;
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     };
@@ -194,49 +291,4 @@ int main()
 
     CloseHandle(processHandle);
 
-    /*
-    HWND hwnd = NULL;
-
-
-    for (auto& element : windowHandles)
-    {
-        if (element.first == pid)
-        {
-            hwnd = element.second;
-        };
-    };
-
-    HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, false, pid);
-
-
-    HINSTANCE processInstanceHandle = reinterpret_cast<HINSTANCE>(GetWindowLongPtrW(hwnd, GWLP_HINSTANCE));
-
-    wchar_t executeablePath[MAX_PATH] { 0 };
-
-    K32GetModuleFileNameExW(processHandle, nullptr, executeablePath, MAX_PATH);
-
-    HICON iconHandle = ExtractIconW(processInstanceHandle, executeablePath, 0);
-
-    if (!iconHandle)
-    {
-        auto error = GetLastErrorAsStringW();
-        DebugBreak();
-    };
-
-
-    ICONINFO iconInfo { 0 };
-    GetIconInfo(iconHandle, &iconInfo);
-
-    std::uint8_t pixels1[1024] { 0};
-    std::uint8_t pixels2[1024] { 0};
-
-    WINCALL(GetBitmapBits(iconInfo.hbmColor, 1024, pixels1));
-    WINCALL(GetBitmapBits(iconInfo.hbmMask, 1024, pixels2));
-
-    CloseHandle(processHandle);
-
-    */
-
-    //char* pImage = NULL;
-    //WINCALL(GlobalLock(iconHandle));
 };
