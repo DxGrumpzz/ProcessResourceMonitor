@@ -14,6 +14,12 @@
 #include <thread>
 #include <CommCtrl.h>
 #include <sstream>
+#include <thread>
+
+#include <commctrl.h>
+#pragma comment(lib, "comctl32.lib")
+
+HWND _hwnd = NULL;
 
 std::wstring GetLastErrorAsStringW()
 {
@@ -51,30 +57,53 @@ std::string GetLastErrorAsStringA()
     return message;
 };
 
-#define WINCALL(result) WinCall(result)
 
+#ifdef _DEBUG
 
+#define WINCALL(result) WinCall(result, __LINE__, __FILEW__)
 
-void WinCall(std::intmax_t result)
+std::intmax_t WinCall(std::intmax_t result, std::intmax_t line, const wchar_t* file)
 {
     if (!result)
     {
-        std::string error = GetLastErrorAsStringA();
+        const wchar_t* errorTitle = L"WinError";
 
-        throw std::exception(error.c_str());
+        std::wstring error;
+        error.append(L"An error occured in ")
+            .append(file)
+            .append(L"\n")
+            .append(L"Line: ")
+            .append(std::to_wstring(line))
+            .append(L"\n")
+            .append(L"Error:\n")
+            .append(GetLastErrorAsStringW());
+
+        MessageBoxW(_hwnd, error.c_str(), errorTitle, MB_ICONERROR);
+
+        DebugBreak();
     };
+
+    return result;
 };
 
-
-HANDLE WinCall(HANDLE handleResult)
+HANDLE WinCall(HANDLE handleResult, std::intmax_t line, const wchar_t* file)
 {
     if (handleResult == NULL)
     {
-        throw std::exception(GetLastErrorAsStringA().c_str());
+        std::wstring error = GetLastErrorAsStringW();
+
+        MessageBoxW(_hwnd, error.c_str(), L"WinError", MB_ICONERROR);
     };
 
     return handleResult;
 };
+
+#else
+// This macro will not check if the call has failed because the environment is currently set to Release
+#define WINCALL
+#endif 
+
+
 
 
 BOOL CALLBACK EnumWindowsCallback(HWND hwnd, LPARAM param)
@@ -165,6 +194,7 @@ char AddShowGrowthToStream(std::intmax_t current, std::intmax_t previous)
         return '^';
     };
 
+    return '?';
 }
 
 
@@ -178,13 +208,13 @@ const std::pair<DWORD, HWND>& FindProcessByID(const std::vector<std::pair<DWORD,
         std::cin >> processID;
 
         std::vector<std::pair<DWORD, HWND>>::const_iterator processData = std::find_if(windowHandles.cbegin(), windowHandles.cend(),
-                                                                                 [processID](const std::pair<DWORD, HWND>& element)
-                                                                                 {
-                                                                                     if (element.first == processID)
-                                                                                         return true;
+                                                                                       [processID](const std::pair<DWORD, HWND>& element)
+        {
+            if (element.first == processID)
+                return true;
 
-                                                                                     return false;
-                                                                                 });
+            return false;
+        });
         if (processData != windowHandles.cend())
             return *processData;
         else
@@ -198,7 +228,7 @@ const std::pair<DWORD, HWND>& FindProcessByID(const std::vector<std::pair<DWORD,
 float GetPercentageChange(std::intmax_t current, std::intmax_t previous)
 {
     std::intmax_t difference = current - previous;
-    
+
     if (difference > 0)
         int s = 0;
 
@@ -220,8 +250,10 @@ void ShowProcessMemoryData(const PROCESS_MEMORY_COUNTERS_EX& currentProcessMemor
 
 };
 
+
 int main()
 {
+    _hwnd = GetConsoleWindow();
 
     MEMORYSTATUSEX memoryStatus { sizeof(memoryStatus) };
 
@@ -239,7 +271,7 @@ int main()
     DWORD processID = processData.first;
 
 
-    HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, false, processID);
+    HANDLE processHandle = WINCALL(OpenProcess(PROCESS_ALL_ACCESS, false, processID));
 
 
     PERFORMACE_INFORMATION performaceInfo { 0 };
@@ -250,14 +282,13 @@ int main()
 
     PROCESS_MEMORY_COUNTERS_EX previousProcessMemory { 0 };
 
-
     while (1)
     {
         const std::size_t processTitleLength = static_cast<std::size_t>(GetWindowTextLengthW(processData.second)) + 1;
         wchar_t* processTitle = new wchar_t[processTitleLength];
         memset(processTitle, 0, processTitleLength);
 
-        WINCALL(GetWindowTextW(processData.second, processTitle, processTitleLength));
+        WINCALL(GetWindowTextW(processData.second, processTitle, static_cast<int>(processTitleLength)));
 
         std::time_t timePoint = std::time(0);
         std::tm timePointNow { 0 };
