@@ -11,8 +11,13 @@
         Height="450" 
         Width="800"
         
-        Loaded="Window_Loaded">
+        d:DataContext="{x:Static local:MainWindowViewModel.DesignTimeData}">
 
-    <StackPanel x:Name="MainStackPanel"> </StackPanel>
+    <Grid>
+        
+        <!-- Main page presnter -->
+        <ContentPresenter Content="{Binding CurrentMainView}"/>
+        
+    </Grid>
 
 </Window>
