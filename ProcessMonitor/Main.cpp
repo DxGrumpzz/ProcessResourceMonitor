@@ -16,97 +16,12 @@
 #include <sstream>
 #include <thread>
 
-#include <commctrl.h>
-#pragma comment(lib, "comctl32.lib")
-
-HWND _hwnd = NULL;
-
-std::wstring GetLastErrorAsStringW()
-{
-    // Stores the error message as a string in memory
-    LPWSTR buffer = nullptr;
-
-    // Format DWORD error ID to a string 
-    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   NULL,
-                   GetLastError(),
-                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   (LPWSTR)&buffer, 0, NULL);
-
-    // Create std string from buffer
-    std::wstring message(buffer);
-
-    return message;
-};
-
-std::string GetLastErrorAsStringA()
-{
-    // Stores the error message as a string in memory
-    LPSTR buffer = nullptr;
-
-    // Format DWORD error ID to a string 
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   NULL,
-                   GetLastError(),
-                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   (LPSTR)&buffer, 0, NULL);
-
-    // Create std string from buffer
-    std::string message(buffer);
-
-    return message;
-};
-
-
-#ifdef _DEBUG
-
-#define WINCALL(result) WinCall(result, __LINE__, __FILEW__)
-
-std::intmax_t WinCall(std::intmax_t result, std::intmax_t line, const wchar_t* file)
-{
-    if (!result)
-    {
-        const wchar_t* errorTitle = L"WinError";
-
-        std::wstring error;
-        error.append(L"An error occured in ")
-            .append(file)
-            .append(L"\n")
-            .append(L"Line: ")
-            .append(std::to_wstring(line))
-            .append(L"\n")
-            .append(L"Error:\n")
-            .append(GetLastErrorAsStringW());
-
-        MessageBoxW(_hwnd, error.c_str(), errorTitle, MB_ICONERROR);
-
-        DebugBreak();
-    };
-
-    return result;
-};
-
-HANDLE WinCall(HANDLE handleResult, std::intmax_t line, const wchar_t* file)
-{
-    if (handleResult == NULL)
-    {
-        std::wstring error = GetLastErrorAsStringW();
-
-        MessageBoxW(_hwnd, error.c_str(), L"WinError", MB_ICONERROR);
-    };
-
-    return handleResult;
-};
-
-#else
-// This macro will not check if the call has failed because the environment is currently set to Release
-#define WINCALL
-#endif 
+#include "WindowsHelpers.hpp"
 
 
 
 
-BOOL CALLBACK EnumWindowsCallback(HWND hwnd, LPARAM param)
+BOOL CALLBACK EnumWindowProcessesCallback(HWND hwnd, LPARAM param)
 {
     int titleLength = GetWindowTextLengthW(hwnd);
 
@@ -253,8 +168,6 @@ void ShowProcessMemoryData(const PROCESS_MEMORY_COUNTERS_EX& currentProcessMemor
 
 int main()
 {
-    _hwnd = GetConsoleWindow();
-
     MEMORYSTATUSEX memoryStatus { sizeof(memoryStatus) };
 
     GlobalMemoryStatusEx(&memoryStatus);
@@ -262,7 +175,7 @@ int main()
 
     std::vector<std::pair<DWORD, HWND>> windowHandles;
 
-    EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&windowHandles));
+    EnumWindows(EnumWindowProcessesCallback, reinterpret_cast<LPARAM>(&windowHandles));
 
     DisplayProcesses(windowHandles);
 
