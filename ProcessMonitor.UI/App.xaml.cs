@@ -1,9 +1,9 @@
 ﻿namespace ProcessMonitor.UI
 {
     using System;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Windows;
-
 
     public class ProcessData
     {
@@ -80,15 +80,37 @@
             return processes;
         }
 
-
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            ProcessData[] processes = GetProcesses();
 
-            (Current.MainWindow = new MainWindow(processes))
+            DI di = CreateDI();
+
+            (Current.MainWindow = new MainWindow(di.GetService<MainWindowViewModel>()))
             .Show();
+        }
+
+
+        private DI CreateDI()
+        {
+            DI di = new DI();
+
+            // Bind ProcessListViewModel
+            ProcessData[] processes = GetProcesses();
+            di.AddSingelton<ProcessListViewModel>(
+                new ProcessListViewModel(processes
+                .Select(process => new ProcessDataListItemViewModel(process))
+                .ToList()));
+
+            // Bind MainWindow viewmodel
+            di.AddSingelton<MainWindowViewModel>(
+                new MainWindowViewModel()
+                {
+                    CurrentMainView = new ProcessListView(di.GetService<ProcessListViewModel>())
+                });
+
+            return di;
         }
 
     };
