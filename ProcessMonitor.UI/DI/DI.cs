@@ -1,4 +1,4 @@
-namespace ProcessMonitor.UI
+﻿namespace ProcessMonitor.UI
 {
     using System;
     using System.Collections.Generic;
@@ -8,20 +8,49 @@ namespace ProcessMonitor.UI
     /// An enumerator for the type of services available
     /// </summary>
     public enum ServiceType
-    { 
+    {
         /// <summary>
-        /// A single unique instance of a service that will retireved every time <see cref="DI.GetService{T}"/> is called
+        /// A single unique instance of a service that will retireved every time <see cref="DIContainer.GetService{T}"/> is called
         /// </summary>
         Singleton = 0,
 
         /// <summary>
-        /// A service that will be instanciated with every call to <see cref="DI.GetService{T}"/> 
+        /// A service that will be instanciated with every call to <see cref="DIContainer.GetService{T}"/> 
         /// </summary>
         Transient = 1,
     };
 
-    
     /// <summary>
+    /// The actual DI provider for the application
+    /// </summary>
+    public static class DI
+    {
+        /// <summary>
+        /// a service container
+        /// </summary>
+        private static DIContainer _container;
+
+        /// <summary>
+        /// Initialzie this provider
+        /// </summary>
+        /// <param name="container"></param>
+        public static void Initialize(DIContainer container)
+        {
+            _container = container;
+        }
+
+        /// <summary>
+        /// Get a bound service
+        /// </summary>
+        /// <typeparam name="T"> The service type </typeparam>
+        /// <returns></returns>
+        public static T GetService<T>()
+        {
+            return _container.GetService<T>();
+        }
+    };
+
+
     /// <summary>
     /// A DI container, holds bound services
     /// </summary>
@@ -57,7 +86,7 @@ namespace ProcessMonitor.UI
         /// Add a default instance of a singelton service
         /// </summary>
         /// <typeparam name="T"> The service type </typeparam>
-        public void AddSingelton<T>() 
+        public void AddSingelton<T>()
             where T : new()
         {
             // Add the singelton service and call the default constructor
@@ -108,7 +137,7 @@ namespace ProcessMonitor.UI
                 return serviceFactory();
             };
 
-            
+
             return (T)service.Item1;
         }
 
