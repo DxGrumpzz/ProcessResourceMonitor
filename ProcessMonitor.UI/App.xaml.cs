@@ -85,9 +85,9 @@ namespace ProcessMonitor.UI
             base.OnStartup(e);
 
 
-            DI di = CreateDI();
+            DI.Initialize(CreateDIContainer());
 
-            (Current.MainWindow = new MainWindow(di.GetService<MainWindowViewModel>()))
+            (Current.MainWindow = new MainWindow(DI.GetService<MainWindowViewModel>()))
             .Show();
         }
 
