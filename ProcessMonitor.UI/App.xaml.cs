@@ -1,9 +1,11 @@
-namespace ProcessMonitor.UI
+﻿namespace ProcessMonitor.UI
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Windows;
+    using System.Windows.Controls;
 
     public class ProcessData
     {
@@ -12,12 +14,14 @@ namespace ProcessMonitor.UI
         public ulong ProcessID { get; set; }
         public IntPtr ProcessHWND { get; set; }
     };
+    
 
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
     public partial class App : Application
     {
+
 
         private const string DLL_NAME = "ProcessMonitor.dll";
 
@@ -80,6 +84,7 @@ namespace ProcessMonitor.UI
             return processes;
         }
 
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -109,7 +114,18 @@ namespace ProcessMonitor.UI
                     CurrentMainView = new ProcessListView(diContainer.GetService<ProcessListViewModel>())
                 });
 
-            return di;
+
+            // Bind view changer
+            diContainer.AddSingelton<IMainViewChanger<MainViews>>(new WPFMainViewChanger<MainViews>(
+                diContainer.GetService<MainWindowViewModel>(),
+                new Dictionary<MainViews, UserControl>()
+                {
+                    { MainViews.ProcessListView, new ProcessListView() },
+                    { MainViews.ProcessItemView, new ProcessItemView()},
+                }));
+
+
+            return diContainer;
         }
 
     };
