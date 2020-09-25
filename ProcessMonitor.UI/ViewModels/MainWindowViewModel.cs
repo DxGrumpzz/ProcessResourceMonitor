@@ -1,8 +1,10 @@
 namespace ProcessMonitor.UI
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Windows.Controls;
+    using System.Windows.Input;
 
     /// <summary>
     /// 
@@ -38,15 +40,22 @@ namespace ProcessMonitor.UI
 
         #region Commands
 
+        public ICommand BackCommand { get; }
+
         #endregion
 
 
         public MainWindowViewModel()
         {
-
+            BackCommand = new RelayCommand(ExecuteBackCommand);
         }
 
+        private void ExecuteBackCommand()
+        {
+            var viewChanger = DI.GetService<IMainViewChanger<MainViews>>();
 
+            viewChanger.ChangeView(MainViews.ProcessListView, DI.GetService<ProcessListViewModel>());
+        }
 
     };
 };

@@ -30,11 +30,15 @@
                             <Style TargetType="{x:Type Grid}">
 
                                 <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="TextBlock.Foreground" Value="Black"/>
+                         
                                 <Style.Triggers>
 
                                     <Trigger Property="IsMouseOver" Value="True">
 
-                                        <Setter Property="Background" Value="#4050FF"/>
+                                        <Setter Property="Background" Value="#0000FF"/>
+                                        <Setter Property="TextBlock.Foreground" Value="#FFFFFF"/>
+                                        
                                         <Setter Property="Cursor" Value="Hand"/>
 
                                     </Trigger>
@@ -44,6 +48,7 @@
                             </Style>
 
                         </Grid.Style>
+                        
 
                         <Grid.InputBindings>
                             <MouseBinding MouseAction="LeftClick"

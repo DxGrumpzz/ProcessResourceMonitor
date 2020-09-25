@@ -6,7 +6,7 @@ namespace ProcessMonitor.UI
     /// <summary>
     /// 
     /// </summary>
-    public class ProcessItemViewModel
+    public class ProcessItemViewModel : BaseViewModel
     {
 
         #region Design data

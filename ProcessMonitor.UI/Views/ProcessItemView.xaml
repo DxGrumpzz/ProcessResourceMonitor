@@ -11,15 +11,22 @@
              
              d:DataContext="{x:Static local:ProcessItemViewModel.DesignTimeData}">
 
-    <Grid>
+    <StackPanel>
 
-        <Grid.InputBindings>
+        <StackPanel.InputBindings>
             <MouseBinding MouseAction="LeftClick"
                           Command="{Binding}"/>
-        </Grid.InputBindings>
+        </StackPanel.InputBindings>
 
+        
         <TextBlock Text="{Binding ProcessData.ProcessName}"/>
+        
+        <TextBlock Text="{Binding ProcessData.ProcessHandle}"/>
+        
+        <TextBlock Text="{Binding ProcessData.ProcessHWND}"/>
+        
+        <TextBlock Text="{Binding ProcessData.ProcessID}"/>
 
-    </Grid>
+    </StackPanel>
 
 </UserControl>

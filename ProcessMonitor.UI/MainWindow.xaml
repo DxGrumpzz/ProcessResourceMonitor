@@ -14,10 +14,22 @@
         d:DataContext="{x:Static local:MainWindowViewModel.DesignTimeData}">
 
     <Grid>
-        
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="AUTO"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <Button Content="Back"
+                HorizontalAlignment="Left"
+                
+                Command="{Binding BackCommand}"/>
+
         <!-- Main page presnter -->
-        <ContentPresenter Content="{Binding CurrentMainView}"/>
-        
+        <ContentPresenter Content="{Binding CurrentMainView}"
+                          
+                          Grid.Row="1"/>
+
     </Grid>
 
 </Window>

@@ -35,9 +35,13 @@ namespace ProcessMonitor.UI
             ProcessClickCommand = new RelayCommand(ExecuteProcessClickCommand);
         }
 
+
         private void ExecuteProcessClickCommand()
         {
-            
+            var viewChanger = DI.GetService<IMainViewChanger<MainViews>>();
+
+            viewChanger.ChangeView(MainViews.ProcessItemView, new ProcessItemViewModel(Process));
         }
+
     };
 };
