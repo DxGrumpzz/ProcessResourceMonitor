@@ -1,4 +1,4 @@
-﻿namespace ProcessMonitor.UI
+namespace ProcessMonitor.UI
 {
     using System;
     using System.Linq;
@@ -92,22 +92,21 @@
         }
 
 
-        private DI CreateDI()
+        private DIContainer CreateDIContainer()
         {
-            DI di = new DI();
+            DIContainer diContainer = new DIContainer();
 
             // Bind ProcessListViewModel
-            ProcessData[] processes = GetProcesses();
-            di.AddSingelton<ProcessListViewModel>(
-                new ProcessListViewModel(processes
+            diContainer.AddSingelton<ProcessListViewModel>(
+                new ProcessListViewModel(GetProcesses()
                 .Select(process => new ProcessDataListItemViewModel(process))
                 .ToList()));
 
             // Bind MainWindow viewmodel
-            di.AddSingelton<MainWindowViewModel>(
+            diContainer.AddSingelton<MainWindowViewModel>(
                 new MainWindowViewModel()
                 {
-                    CurrentMainView = new ProcessListView(di.GetService<ProcessListViewModel>())
+                    CurrentMainView = new ProcessListView(diContainer.GetService<ProcessListViewModel>())
                 });
 
             return di;

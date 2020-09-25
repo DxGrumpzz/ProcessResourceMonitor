@@ -1,4 +1,4 @@
-﻿namespace ProcessMonitor.UI
+namespace ProcessMonitor.UI
 {
     using System;
     using System.Collections.Generic;
@@ -22,16 +22,17 @@
 
     
     /// <summary>
-    /// A DI container for the application
+    /// <summary>
+    /// A DI container, holds bound services
     /// </summary>
-    public class DI
+    public class DIContainer
     {
         /// <summary>
         /// A dictionary that will contain a list of services
         /// </summary>
         private Dictionary<string, Tuple<object, ServiceType>> _services;
 
-        public DI()
+        public DIContainer()
         {
             _services = new Dictionary<string, Tuple<object, ServiceType>>();
         }
@@ -98,7 +99,7 @@
                 throw new Exception($"Service {typeof(T)} does not exist");
 
             // If the service was bound as a transient 
-            if(service.Item2 == ServiceType.Transient)
+            if (service.Item2 == ServiceType.Transient)
             {
                 // Get the service factory 
                 Func<T> serviceFactory = (Func<T>)service.Item1;
@@ -125,4 +126,5 @@
         }
 
     };
+
 };
