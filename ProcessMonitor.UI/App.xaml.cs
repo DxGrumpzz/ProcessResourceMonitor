@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Windows;
     using System.Windows.Controls;
@@ -14,7 +15,7 @@
         public ulong ProcessID { get; set; }
         public IntPtr ProcessHWND { get; set; }
     };
-    
+
 
     /// <summary>
     /// Interaction logic for App.xaml
@@ -47,7 +48,6 @@
         private static extern bool GetProcesses(ref IntPtr processDataOut, ref ulong numberOfProcesses);
         [DllImport(DLL_NAME)]
         private static extern bool DeleteUnmangedMemory(ref IntPtr pointr, bool isArray = false);
-
 
 
         private ProcessData[] GetProcesses()
@@ -93,7 +93,7 @@
             DI.Initialize(CreateDIContainer());
 
             (Current.MainWindow = new MainWindow(DI.GetService<MainWindowViewModel>()))
-            .Show();
+                .Show();
         }
 
 
@@ -118,11 +118,12 @@
             // Bind view changer
             diContainer.AddSingelton<IMainViewChanger<MainViews>>(new WPFMainViewChanger<MainViews>(
                 diContainer.GetService<MainWindowViewModel>(),
-                new Dictionary<MainViews, UserControl>()
+                new Dictionary<MainViews, Type>()
                 {
-                    { MainViews.ProcessListView, new ProcessListView() },
-                    { MainViews.ProcessItemView, new ProcessItemView()},
+                    { MainViews.ProcessListView, typeof(ProcessListView) },
+                    { MainViews.ProcessItemView, typeof(ProcessItemView)},
                 }));
+
 
 
             return diContainer;

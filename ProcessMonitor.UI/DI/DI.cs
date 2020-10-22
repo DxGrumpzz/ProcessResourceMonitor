@@ -48,6 +48,23 @@
         {
             return _container.GetService<T>();
         }
+
+        /// <summary>
+        /// Find a service without using generics
+        /// </summary>
+        /// <param name="serviceType"></param>
+        /// <returns></returns>
+        public static object GetService(Type serviceType)
+        {
+            // Get the DIContainer.GetService function
+            var getServiceMetodNonGeneric = typeof(DIContainer).GetMethod(nameof(DIContainer.GetService));
+
+            // Give it the Type argument
+            var getServiceMethod = getServiceMetodNonGeneric.MakeGenericMethod(new[] { serviceType } );
+            
+            // Call it "normally"
+            return getServiceMethod.Invoke(_container, null);
+        }
     };
 
 
